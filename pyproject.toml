@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "governed-agent"
+version = "0.1.0"
+description = "A governed LangGraph agent: checkpointing, streaming, human-in-the-loop, tracing, and an eval harness — tools enforced by row-level security."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Emory Long" }]
+keywords = ["langgraph", "langchain", "agent", "human-in-the-loop", "checkpointing", "guardrails", "mcp", "eval"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "langgraph>=0.2",
+    "langchain-core>=0.3",
+    "langgraph-checkpoint-sqlite>=2.0",
+    "typer>=0.12",
+    "rich>=13.7",
+]
+
+[project.optional-dependencies]
+openai = ["langchain-openai>=0.2"]
+anthropic = ["langchain-anthropic>=0.2"]
+mcp = ["langchain-mcp-adapters>=0.1", "mcp>=1.9"]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+governed-agent = "governed_agent.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
