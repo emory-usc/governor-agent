@@ -9,16 +9,14 @@ Commands:
 
 from __future__ import annotations
 
-import sys
-
 import typer
 from langchain_core.messages import HumanMessage
 from langgraph.types import Command
 from rich.console import Console
 
 from governed_agent import __version__, tracing, tools
-from governed_agent.graph import AgentState, build_graph, get_interrupt, make_checkpointer
-from governed_agent.model import scripted_model
+from governed_agent.graph import build_graph, get_interrupt, make_checkpointer
+from governed_agent.model import build_model, resume_model, scripted_model
 
 app = typer.Typer(
     help="A governed LangGraph agent: checkpointing, streaming, human-in-the-loop, evals.",
@@ -27,20 +25,6 @@ app = typer.Typer(
 console = Console()
 
 DEFAULT_DB = "agent.db"
-
-
-def _run_to_interrupt(graph, thread_id: str, question: str, caller: str):
-    """Invoke until the graph interrupts (or completes). Returns
-    (interrupt_payload | None, final_state | None)."""
-    config = {"configurable": {"thread_id": thread_id, "caller": caller}}
-    result = graph.invoke(
-        {"messages": [HumanMessage(content=question)], "caller": caller},
-        config=config,
-    )
-    payload = get_interrupt(result)
-    if payload is not None:
-        return payload, None
-    return None, result
 
 
 @app.command()
@@ -53,7 +37,16 @@ def run(
 ) -> None:
     """Run the agent. It pauses for human approval before any tool call."""
     graph = build_graph(make_checkpointer(db))
-    payload, result = _run_to_interrupt(graph, thread_id, question, caller)
+    # one model instance for the whole run, so the scripted demo model
+    # continues its script across the interrupt/resume boundary
+    model = build_model(tools.TOOLS)
+    config = {"configurable": {"thread_id": thread_id, "caller": caller, "model": model}}
+
+    result = graph.invoke(
+        {"messages": [HumanMessage(content=question)], "caller": caller},
+        config=config,
+    )
+    payload = get_interrupt(result)
 
     if payload is not None:
         console.print(f"[yellow]⏸ Interrupted — approval required[/] (thread {thread_id!r})")
@@ -61,10 +54,7 @@ def run(
             console.print(f"   tool: [bold]{tc['name']}[/] args={tc['args']}")
         if approve:
             console.print("[green]approving…[/]")
-            result = graph.invoke(
-                Command(resume=True),
-                config={"configurable": {"thread_id": thread_id, "caller": caller}},
-            )
+            result = graph.invoke(Command(resume=True), config=config)
         else:
             console.print(
                 f"   resume: governed-agent resume {thread_id} --approve|--reject --db {db}"
@@ -83,8 +73,13 @@ def resume(
 ) -> None:
     """Resume an interrupted run from its checkpoint (any process, any time)."""
     graph = build_graph(make_checkpointer(db))
-    config = {"configurable": {"thread_id": thread_id}}
-    result = graph.invoke(Command(resume=not approve or True), config=config)
+    # fresh process: real models are stateless; the scripted demo model picks
+    # up AFTER the pending tool call
+    model = resume_model(tools.TOOLS, rejected=not approve)
+    config = {"configurable": {"thread_id": thread_id, "model": model}}
+
+    decision = True if approve else "reject"
+    result = graph.invoke(Command(resume=decision), config=config)
     final = result["messages"][-1]
     console.print(f"[green]✓ final answer[/]: {final.content}")
 
@@ -101,8 +96,12 @@ def trace(
         "configurable": {"thread_id": "trace-demo", "caller": caller, "model": model},
         "callbacks": [collector],
     }
-    _run_to_interrupt(graph, "trace-demo", "total balance by region", caller)
-    graph.invoke(Command(resume=True), config=config)
+    result = graph.invoke(
+        {"messages": [HumanMessage(content="total balance by region")], "caller": caller},
+        config=config,
+    )
+    if get_interrupt(result) is not None:
+        result = graph.invoke(Command(resume=True), config=config)
     console.print("[bold]run tree (LangSmith shape)[/]")
     console.print(collector.render())
 

@@ -44,21 +44,44 @@ def scripted_model(tools: list, script: list[AIMessage] | None = None):
     it doesn't need it: scripted messages carry their tool_calls directly.
     """
     if script is None:
-        script = [
-            AIMessage(
-                content="",
-                tool_calls=[
-                    {
-                        "name": "aggregate_balances",
-                        "args": {},
-                        "id": "call_aggregate",
-                        "type": "tool_call",
-                    }
-                ],
-            ),
-            AIMessage(
-                content="Here are the balances by region I can see: "
-                "the aggregate returned the region totals."
-            ),
-        ]
+        script = DEFAULT_SCRIPT
     return GenericFakeChatModel(messages=iter(script))
+
+
+DEFAULT_SCRIPT: list[AIMessage] = [
+    AIMessage(
+        content="",
+        tool_calls=[
+            {
+                "name": "aggregate_balances",
+                "args": {},
+                "id": "call_aggregate",
+                "type": "tool_call",
+            }
+        ],
+    ),
+    AIMessage(
+        content="Here are the balances by region I can see: "
+        "the aggregate returned the region totals."
+    ),
+]
+
+FINAL_APPROVED = AIMessage(
+    content="Here are the balances by region I can see: "
+    "the aggregate returned the region totals."
+)
+FINAL_REJECTED = AIMessage(
+    content="The human rejected my tool call, so I cannot provide that data."
+)
+
+
+def resume_model(tools: list, rejected: bool = False):
+    """Model for resuming an interrupted run.
+
+    Real providers are stateless, so a fresh model is correct. For the
+    scripted demo model we start AFTER the tool call — the pending call has
+    already been made and the resume only needs the final response.
+    """
+    if os.environ.get("OPENAI_API_KEY") or os.environ.get("ANTHROPIC_API_KEY"):
+        return build_model(tools)
+    return GenericFakeChatModel(messages=iter([FINAL_REJECTED if rejected else FINAL_APPROVED]))
