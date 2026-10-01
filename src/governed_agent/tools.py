@@ -47,6 +47,9 @@ def load_mcp_tools(server_url: str = "http://localhost:8000/mcp") -> list:
 
     Requires the ``mcp`` extra (langchain-mcp-adapters). The returned tools
     carry the same governance, enforced server-side.
+
+    Note: as of langchain-mcp-adapters 0.1.0 the client is not an async
+    context manager — use ``client.get_tools()`` directly.
     """
     from langchain_mcp_adapters.client import MultiServerMCPClient
 
@@ -62,8 +65,7 @@ def load_mcp_tools(server_url: str = "http://localhost:8000/mcp") -> list:
 
         async def get(self):
             if self._tools is None:
-                async with client:
-                    self._tools = await client.get_tools()
+                self._tools = await client.get_tools()
             return self._tools
 
     return _LazyTools()
