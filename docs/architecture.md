@@ -1,4 +1,4 @@
-# Governed Agent — architecture and production notes
+# Governor Agent — architecture and production notes
 
 ## The graph
 
@@ -24,9 +24,9 @@ START ─► agent ──(tool_calls?)──► tools ──► agent ──(no 
   `Command(resume="reject")`.
 - **routing** — agent → tools while the last message carries tool calls,
   otherwise END.
-- **tools** — the governed-mcp query layer, ported in-process (see
+- **tools** — the governor-mcp query layer, ported in-process (see
   `governed.py`). Row-level security + masking + withheld disclosure on every
-  call. The real governed-mcp MCP server can be consumed instead via
+  call. The real governor-mcp MCP server can be consumed instead via
   `tools.load_mcp_tools()` (langchain-mcp-adapters).
 
 ## Durability
@@ -50,7 +50,7 @@ shaped run tree (run id, parent, type, inputs/outputs, durations). In
 production:
 
 ```bash
-LANGCHAIN_TRACING_V2=true LANGSMITH_API_KEY=lsv2_... LANGSMITH_PROJECT=governed-agent
+LANGCHAIN_TRACING_V2=true LANGSMITH_API_KEY=lsv2_... LANGSMITH_PROJECT=governor-agent
 ```
 
 The same graph emits the same runs to LangSmith with zero code changes, where

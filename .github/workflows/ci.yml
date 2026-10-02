@@ -24,7 +24,7 @@ jobs:
         run: uv run pytest
 
       - name: Run adversarial + durability eval harness
-        run: uv run governed-agent eval
+        run: uv run governor-agent eval
 
       - name: Smoke-test the CLI (interrupt + auto-approve flow)
-        run: uv run governed-agent run "total balance by region" --approve
+        run: uv run governor-agent run "total balance by region" --approve

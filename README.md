@@ -1,11 +1,11 @@
-# Governed Agent
+# Governor Agent
 
-[![CI](https://github.com/emory-usc/governed-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/emory-usc/governed-agent/actions/workflows/ci.yml)
+[![CI](https://github.com/emory-usc/governor-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/emory-usc/governor-agent/actions/workflows/ci.yml)
 
 A governed LangGraph agent with the pieces production teams actually need:
 checkpointing, streaming, human-in-the-loop approval, tracing, and an eval
 harness that proves the guardrails hold. The tools are the governed, read-only
-query functions from `governed-mcp` — row-level security enforced on every
+query functions from `governor-mcp` — row-level security enforced on every
 tool call, so the agent can only ever see what its caller is allowed to see.
 
 This repo is a cookbook, not a toy: every pattern here (durable checkpoints,
@@ -16,7 +16,7 @@ reusable against your own tools and data.
 
 | Capability | How |
 |---|---|
-| **Tool calling with enforced boundaries** | Tools are wrapped governed-mcp queries: fail-closed RLS + masking on every call |
+| **Tool calling with enforced boundaries** | Tools are wrapped governor-mcp queries: fail-closed RLS + masking on every call |
 | **Human-in-the-loop** | The graph interrupts before tool execution; a human approves or rejects, and the run resumes from the checkpoint |
 | **Checkpointing / durability** | SQLite checkpointer persists state per thread; kill the process mid-run and resume exactly where it stopped |
 | **Streaming** | Token-level LLM streaming plus per-node state updates |
@@ -29,14 +29,14 @@ reusable against your own tools and data.
 pip install -e ".[dev]"
 
 # deterministic offline demo (no API keys, scripted model)
-governed-agent run "What is the total balance by region?"
+governor-agent run "What is the total balance by region?"
 
 # same graph, real model (set one of:)
 #   OPENAI_API_KEY=...          -> gpt-4o-mini via langchain-openai
 #   ANTHROPIC_API_KEY=...       -> claude-3-5-haiku via langchain-anthropic
 
-governed-agent eval            # adversarial + durability eval harness
-governed-agent trace           # print the offline run tree
+governor-agent eval            # adversarial + durability eval harness
+governor-agent trace           # print the offline run tree
 ```
 
 ## Architecture
@@ -57,14 +57,14 @@ maps onto a real review workflow.
 
 ## Consuming the MCP server (alternative tool path)
 
-The default tools call the governed-mcp functions in-process. To consume the
-governed-mcp **MCP server** over the wire instead, install the `mcp` extra and
+The default tools call the governor-mcp functions in-process. To consume the
+governor-mcp **MCP server** over the wire instead, install the `mcp` extra and
 build the agent with `tools=load_mcp_tools()`:
 
 ```python
 from governed_agent.tools import load_mcp_tools  # via langchain-mcp-adapters
 
-# point it at a running governed-mcp server (see governed-mcp repo)
+# point it at a running governor-mcp server (see the governor-mcp repo)
 ```
 
 ## Honest notes

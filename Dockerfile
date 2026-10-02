@@ -21,4 +21,4 @@ USER app
 # The image is a verification/worker job: it runs the adversarial + durability
 # eval harness. See docs/architecture.md for the production deployment story
 # (LangGraph Platform) — the graph itself is identical either way.
-CMD ["governed-agent", "eval"]
+CMD ["governor-agent", "eval"]

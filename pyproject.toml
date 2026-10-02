@@ -34,7 +34,7 @@ dev = [
 ]
 
 [project.scripts]
-governed-agent = "governed_agent.cli:main"
+governor-agent = "governed_agent.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
